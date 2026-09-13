@@ -295,6 +295,12 @@ curl -s http://127.0.0.1:11234/metrics | grep -iE "prefix|cache" | head
 6. **判分脚本本身要复核**:本次 GSM2 期望值算错差点冤枉模型。
 7. **改 plist 前先退出 App**:App 退出时可能用内存旧值覆盖写回。
 8. **1M 慎开**:factor 4.0 折损更大且 4 会话内存放不下,512K 是甜点位。
+9. **绝不在模型自己驱动的会话里 `pkill` 它自己**:当某个 AI 会话(如 ZCode)
+   正由这台 mlx-serve 驱动时,执行 kill 的进程就是被 kill 的进程——自断氧气。
+   实测侥幸:客户端重试 + 模型热加载(~10s)+ 磁盘前缀缓存保住会话,
+   醒来还能继续;但若 App 没自启或加载失败,会话直接中断。
+   正确做法:重启服务让用户在 App 托盘操作,或先约定好重连方式再动手。
+   (2026-09-13 重启验证时亲踩,见 §10)
 
 ---
 
@@ -308,3 +314,42 @@ curl -s http://127.0.0.1:11234/metrics | grep -iE "prefix|cache" | head
 | `~/.mlx-serve/models/ddalcu/.../config.json` | 模型配置(YaRN 已启用) |
 | `~/Library/Preferences/com.dalcu.mlx-core.plist` | MLX Core App 设置 |
 | `~/.zcode/v2/config.json` | ZCode provider 配置 |
+| `~/.mlx-serve/kv-cache/` | 磁盘前缀缓存(每会话一个目录,41GB+) |
+
+---
+
+## 10. 进程重启 / ZCode 重启后的前缀缓存实测(2026-09-13)
+
+问题:mlx-serve 进程重启后,前缀缓存还有效吗?ZCode 关掉再打开,
+session 的 KV 还能续上吗?——**两个答案都是"是"**,以下为实测过程。
+
+### 10.1 验证方法与结果
+
+1. **基线**:固定 seed 构造 40k token 请求。冷 TTFT 97.2s → 同 payload
+   热 TTFT 1.3s,确认缓存生效。
+2. **确认落盘**:每轮请求结束时 mlx-serve 把会话前缀按 1024-token 块写入
+   `~/.mlx-serve/kv-cache/<模型哈希>/<会话哈希>/`(c*.safetensors 为 KV 块,
+   s*.safetensors 为 linear-attention 状态快照,另有 tokens.bin/meta.json)。
+3. **杀进程重启**:pkill mlx-serve + MLXCore,再用 App 同款参数拉起
+   (⚠️ 此操作危险,见 §8 第 9 条——正在被该模型驱动的会话会自断氧气)。
+4. **重启后第一枪**:同一 40k 请求耗时 **0.5s**,API usage 显示
+   `cached_tokens: 40053/40054`——磁盘缓存启动时扫描恢复,几乎全量命中。
+5. **ZCode 会话续接**:用户关闭 ZCode 再打开,服务端收到 81 msgs 完整历史;
+   第一轮 `reused 47052/49518 tokens`(95% 命中,增量部分是关闭前最后落盘
+   点之后的差异),之后每轮恢复纯增量(每轮仅几百~2k token 走 prefill)。
+6. **命中率**:新进程启动后 15 次前缀查询 15 次命中(100%)。
+
+### 10.2 机制要点
+
+- **内存热缓存随进程死,磁盘缓存跨重启存活**。进程启动时扫描
+  `~/.mlx-serve/kv-cache/`,把条目恢复进内存(日志 `[hot-cache] checked
+  out ... to the slot`);每轮结束增量落盘(日志 `[disk-cache] persisted
+  ... (+1 chunks)`)。
+- **前缀匹配是 token 精确前缀**。两个失效场景:① 关闭 ZCode 期间会话历史
+  继续增长(重开后第一枪要重算差异点之后);② `--prefix-cache-entries 16`
+  的 LRU 把旧条目挤出磁盘预算。日常"关掉再打开接着聊"无损。
+- **重启操作的正确姿势**:让用户在 App 托盘操作,或至少先确认重连方式;
+  客户端(ZCode)对连接失败会重试等待,配合模型热加载(~10s)+磁盘缓存,
+  会话可以无感恢复——但这是兜底,不是常规手段。
+- 验证用的可复现脚本模式:固定 `random.Random(seed)` 生成数字序列 payload,
+  两次相同请求 TTFT 差两个数量级即缓存生效;换 seed 即强制冷测。
