@@ -482,7 +482,29 @@ generation_config.json 里模型自带的就是这套。
 `grep "thinking=" ~/.mlx-serve/logs/mlx-serve-11234.log | tail`,
 应看到 `thinking=true`。
 
-### 11.5 注意事项与边界
+### 11.5 档位的实际生效通道(重要修正,2026-09-13 深夜追加)
+
+glm 自动档位下,ZCode 发 anthropic 请求会带两个思考字段:
+
+| 字段 | mlx-serve 是否处理 | 实测证据 |
+|---|---|---|
+| `thinking.budget_tokens` | **忽略**(只用于判断"开思考") | 无论发 256/512/32k,日志恒为 `Reasoning budget: unlimited`;控制变量重复测思考量两组完全重叠(差异只是采样方差) |
+| `output_config.effort` | **真实生效** → 传给 chat template 的 `reasoning_effort` | temp=0 重复测:effort=low 思考 968 字符(两次完全一致),xhigh 1837~2738,2~3 倍差 |
+
+所以**三档(低/中/极高)是真实有效的**——生效通道是 `output_config.effort`
+(Anthropic 协议的正确字段名),不是 budget。模型 template 按档位注入思考
+风格指令:low="简短聚焦直接给结论",xhigh="仔细验证假设、考虑替代方案",
+medium 不注入指令(默认行为)。
+
+排坑注意:直接在 `/v1/messages` 顶层发 `reasoning_effort` 字段**无效**
+(被忽略);不带 `thinking` 字段时甚至不开思考。必须走 `output_config.effort`。
+ZCode 引擎恰好就是这么发的(buildAnthropicRequestBody 把档位同时翻译成
+`output_config.effort` 和 `thinking` 两个键,后者失效前者有效)。
+
+附带:ZCode 还会按 budget+1 钳制请求的 `max_tokens`(它自己的保护逻辑,
+与 mlx-serve 无关)。
+
+### 11.6 注意事项与边界
 
 1. **宽容路由**:mlx-serve 对未知 model 名不报 404,静默兜底到当前加载的
    模型(用假名测试返回 200 并正常作答)。当前常驻只有 Flash-Next,兜底=正确。
