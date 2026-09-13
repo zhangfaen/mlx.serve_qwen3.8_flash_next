@@ -460,7 +460,7 @@ generation_config.json 里模型自带的就是这套。
   },
   "source": "custom",
   "models": {
-    "glm/qwen3.8-flash-next": {
+    "glm-2026-qwen3.8-flash-next": {
       "name": "Qwen3.8 Flash Next (MLX Serve 4/8bit)",
       "limit": { "context": 524288, "output": 32768 },
       "modalities": { "input": ["text","image","video"], "output": ["text"] },
@@ -472,11 +472,23 @@ generation_config.json 里模型自带的就是这套。
 ```
 
 原理:
-- **模型键名含 "glm"** → 命中引擎 glm 判定 → 档位 UI + thinking 翻译全自动,
-  且这些逻辑写死在 ZCode 引擎里,配置里没有可被 UI 删掉的东西 → 持久。
+- **模型键名必须是单段 `glm-<数字>-...` 形态**。ZCode 有两套 glm 判定:
+  请求侧(host)只查"最后一段含 glm"(宽松);**UI 档位侧(renderer)要求
+  匹配 `^glm-\d{4}` 或 `glm-5.2` 前缀(严格)**。第一版键名用了
+  `glm/qwen3.8-flash-next`(两段),请求侧过了但 UI 只剩"开/关"两档;
+  改成 `glm-2026-qwen3.8-flash-next` 后两侧同时命中,UI 恢复三档。
+- 命中后引擎自动生成档位 UI + thinking 翻译,写死在代码里,
+  配置里没有可被 UI 保存删掉的东西 → 持久(UI 重写只清 kinds/modelIdByKind,
+  不影响判定)。
 - `modelIdByKind` 让实际请求仍发真实模型名(引擎 `resolveProtocolModelId`
-  优先读它)——但注意 §11.5 的宽容路由,此字段被 UI 吃掉也不影响当前单模型场景。
+  优先读它)——但注意 §11.6 的宽容路由,此字段被 UI 吃掉也不影响单模型场景。
 - `kind: "anthropic"` + baseURL 不带 `/v1`(Anthropic SDK 自己拼 `/v1/messages`)。
+
+**GLM 家族内置档位词汇是 `[max, high, nothink]`**(ZCode 写死,不是 Qwen 的
+low/medium/xhigh)。mlx-serve 对各档的实测(复杂题,temp=0):
+max 思考 1334~2914 字符(最强),high 1192(约 max 的 60~70%),
+**nothink 无效**(mlx-serve 不认该值,回落默认仍思考——失败方向安全)。
+默认档 max。UI 上"高"=high,"最大"=max,"不思考"=nothink(不灵,别选)。
 
 验证方式:发消息后查服务端日志
 `grep "thinking=" ~/.mlx-serve/logs/mlx-serve-11234.log | tail`,
