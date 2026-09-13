@@ -1,0 +1,158 @@
+[
+  {
+    "scenario": "S1_5k",
+    "provider": "lmstudio",
+    "n_chars": 5000,
+    "runs": [
+      {
+        "ttft_s": 12.939,
+        "gen_s": 44.003,
+        "completion_tokens": 1024,
+        "prompt_tokens": 5092,
+        "finish_reason": "length",
+        "decode_tps": 23.3,
+        "kind": "cold"
+      },
+      {
+        "ttft_s": 0.203,
+        "gen_s": 45.553,
+        "completion_tokens": 1024,
+        "prompt_tokens": 5095,
+        "finish_reason": "length",
+        "decode_tps": 22.5,
+        "kind": "cold"
+      },
+      {
+        "ttft_s": 13.58,
+        "gen_s": 48.61,
+        "completion_tokens": 1024,
+        "prompt_tokens": 5093,
+        "finish_reason": "length",
+        "decode_tps": 21.1,
+        "kind": "cold(warmup)"
+      },
+      {
+        "ttft_s": 0.102,
+        "gen_s": 49.916,
+        "completion_tokens": 1024,
+        "prompt_tokens": 5093,
+        "finish_reason": "length",
+        "decode_tps": 20.5,
+        "kind": "warm"
+      },
+      {
+        "ttft_s": 0.109,
+        "gen_s": 50.927,
+        "completion_tokens": 1024,
+        "prompt_tokens": 5093,
+        "finish_reason": "length",
+        "decode_tps": 20.1,
+        "kind": "warm"
+      }
+    ]
+  },
+  {
+    "scenario": "S2_75k",
+    "provider": "lmstudio",
+    "n_chars": 75000,
+    "runs": [
+      {
+        "ttft_s": 64.961,
+        "gen_s": 71.619,
+        "completion_tokens": 1024,
+        "prompt_tokens": 75089,
+        "finish_reason": "length",
+        "decode_tps": 14.3,
+        "kind": "cold"
+      },
+      {
+        "ttft_s": 417.585,
+        "gen_s": 83.022,
+        "completion_tokens": 1024,
+        "prompt_tokens": 75090,
+        "finish_reason": "length",
+        "decode_tps": 12.3,
+        "kind": "cold"
+      },
+      {
+        "ttft_s": 473.952,
+        "gen_s": 80.951,
+        "completion_tokens": 1024,
+        "prompt_tokens": 75093,
+        "finish_reason": "length",
+        "decode_tps": 12.6,
+        "kind": "cold(warmup)"
+      },
+      {
+        "ttft_s": 0.163,
+        "gen_s": 78.506,
+        "completion_tokens": 1024,
+        "prompt_tokens": 75093,
+        "finish_reason": "length",
+        "decode_tps": 13.0,
+        "kind": "warm"
+      },
+      {
+        "ttft_s": 0.151,
+        "gen_s": 75.276,
+        "completion_tokens": 1024,
+        "prompt_tokens": 75093,
+        "finish_reason": "length",
+        "decode_tps": 13.6,
+        "kind": "warm"
+      }
+    ]
+  },
+  {
+    "scenario": "S3_150k",
+    "provider": "lmstudio",
+    "n_chars": 150000,
+    "runs": [
+      {
+        "ttft_s": 717.994,
+        "gen_s": 116.544,
+        "completion_tokens": 1024,
+        "prompt_tokens": 150089,
+        "finish_reason": "length",
+        "decode_tps": 8.8,
+        "kind": "cold"
+      },
+      {
+        "ttft_s": 723.691,
+        "gen_s": 114.444,
+        "completion_tokens": 1024,
+        "prompt_tokens": 150094,
+        "finish_reason": "length",
+        "decode_tps": 8.9,
+        "kind": "cold"
+      },
+      {
+        "ttft_s": 892.369,
+        "gen_s": 118.751,
+        "completion_tokens": 1024,
+        "prompt_tokens": 150094,
+        "finish_reason": "length",
+        "decode_tps": 8.6,
+        "kind": "cold(warmup)"
+      },
+      {
+        "ttft_s": 0.203,
+        "gen_s": 112.339,
+        "completion_tokens": 1024,
+        "prompt_tokens": 150094,
+        "finish_reason": "length",
+        "decode_tps": 9.1,
+        "kind": "warm"
+      },
+      {
+        "ttft_s": 0.207,
+        "gen_s": 117.461,
+        "completion_tokens": 1024,
+        "prompt_tokens": 150094,
+        "finish_reason": "length",
+        "decode_tps": 8.7,
+        "kind": "warm"
+      }
+    ]
+  }
+]

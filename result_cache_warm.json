@@ -1,0 +1,8 @@
+{
+  "ttft_s": 5.732,
+  "gen_s": 2.153,
+  "completion_tokens": 64,
+  "prompt_tokens": 300054,
+  "finish_reason": "length",
+  "decode_tps": 29.7
+}

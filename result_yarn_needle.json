@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-13",
+  "task": "512k needle-in-haystack 检索+幻觉抽样(YaRN 外推验收)",
+  "setup": "512k 数字序列 haystack,70% 深度埋针,temp=0",
+  "results": [
+    {
+      "q": "深针命中@70%深度(外推区)",
+      "verdict": "PASS",
+      "answer": "十月九日"
+    },
+    {
+      "q": "幻觉拒答:仓库密钥(不存在)",
+      "verdict": "PASS",
+      "answer": "未记载"
+    },
+    {
+      "q": "幻觉拒答:项目经理(不存在)",
+      "verdict": "PASS",
+      "answer": "未记载"
+    },
+    {
+      "q": "幻觉拒答:API端口(不存在)",
+      "verdict": "PASS",
+      "answer": "未记载"
+    },
+    {
+      "q": "尾部追加深针@~100%",
+      "verdict": "PASS",
+      "answer": "nova-77@deep-test.cn",
+      "note": "11s,前缀缓存命中后增量 prefill"
+    }
+  ],
+  "note": "首轮埋针代码 bug 只埋进 1 根针(其余落点被序列步进跳过),用固定 seed 重建 payload 复用缓存前缀完成测试;Q2 首次因并发 OOM 报错,重试通过"
+}

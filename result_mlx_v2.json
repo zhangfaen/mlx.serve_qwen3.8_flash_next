@@ -1,0 +1,158 @@
+[
+  {
+    "scenario": "S1_5k",
+    "provider": "mlx",
+    "n_chars": 5000,
+    "runs": [
+      {
+        "ttft_s": 9.741,
+        "gen_s": 14.358,
+        "completion_tokens": 1024,
+        "prompt_tokens": 5052,
+        "finish_reason": "length",
+        "decode_tps": 71.3,
+        "kind": "cold"
+      },
+      {
+        "ttft_s": 8.465,
+        "gen_s": 14.111,
+        "completion_tokens": 1024,
+        "prompt_tokens": 5055,
+        "finish_reason": "length",
+        "decode_tps": 72.6,
+        "kind": "cold"
+      },
+      {
+        "ttft_s": 8.653,
+        "gen_s": 14.232,
+        "completion_tokens": 1024,
+        "prompt_tokens": 5053,
+        "finish_reason": "length",
+        "decode_tps": 71.9,
+        "kind": "cold(warmup)"
+      },
+      {
+        "ttft_s": 0.322,
+        "gen_s": 15.105,
+        "completion_tokens": 1024,
+        "prompt_tokens": 5053,
+        "finish_reason": "length",
+        "decode_tps": 67.8,
+        "kind": "warm"
+      },
+      {
+        "ttft_s": 0.127,
+        "gen_s": 16.061,
+        "completion_tokens": 1024,
+        "prompt_tokens": 5053,
+        "finish_reason": "length",
+        "decode_tps": 63.8,
+        "kind": "warm"
+      }
+    ]
+  },
+  {
+    "scenario": "S2_75k",
+    "provider": "mlx",
+    "n_chars": 75000,
+    "runs": [
+      {
+        "ttft_s": 170.327,
+        "gen_s": 25.756,
+        "completion_tokens": 1024,
+        "prompt_tokens": 75049,
+        "finish_reason": "length",
+        "decode_tps": 39.8,
+        "kind": "cold"
+      },
+      {
+        "ttft_s": 173.076,
+        "gen_s": 24.027,
+        "completion_tokens": 1024,
+        "prompt_tokens": 75050,
+        "finish_reason": "length",
+        "decode_tps": 42.6,
+        "kind": "cold"
+      },
+      {
+        "ttft_s": 170.672,
+        "gen_s": 23.872,
+        "completion_tokens": 1024,
+        "prompt_tokens": 75053,
+        "finish_reason": "length",
+        "decode_tps": 42.9,
+        "kind": "cold(warmup)"
+      },
+      {
+        "ttft_s": 0.391,
+        "gen_s": 24.777,
+        "completion_tokens": 1024,
+        "prompt_tokens": 75053,
+        "finish_reason": "length",
+        "decode_tps": 41.3,
+        "kind": "warm"
+      },
+      {
+        "ttft_s": 0.192,
+        "gen_s": 25.359,
+        "completion_tokens": 1024,
+        "prompt_tokens": 75053,
+        "finish_reason": "length",
+        "decode_tps": 40.4,
+        "kind": "warm"
+      }
+    ]
+  },
+  {
+    "scenario": "S3_150k",
+    "provider": "mlx",
+    "n_chars": 150000,
+    "runs": [
+      {
+        "ttft_s": 344.227,
+        "gen_s": 24.532,
+        "completion_tokens": 1024,
+        "prompt_tokens": 150049,
+        "finish_reason": "length",
+        "decode_tps": 41.7,
+        "kind": "cold"
+      },
+      {
+        "ttft_s": 348.047,
+        "gen_s": 24.608,
+        "completion_tokens": 1024,
+        "prompt_tokens": 150054,
+        "finish_reason": "length",
+        "decode_tps": 41.6,
+        "kind": "cold"
+      },
+      {
+        "ttft_s": 348.617,
+        "gen_s": 24.66,
+        "completion_tokens": 1024,
+        "prompt_tokens": 150054,
+        "finish_reason": "length",
+        "decode_tps": 41.5,
+        "kind": "cold(warmup)"
+      },
+      {
+        "ttft_s": 162.488,
+        "gen_s": 31.572,
+        "completion_tokens": 1024,
+        "prompt_tokens": 150054,
+        "finish_reason": "length",
+        "decode_tps": 32.4,
+        "kind": "warm"
+      },
+      {
+        "ttft_s": 161.536,
+        "gen_s": 28.861,
+        "completion_tokens": 1024,
+        "prompt_tokens": 150054,
+        "finish_reason": "length",
+        "decode_tps": 35.5,
+        "kind": "warm"
+      }
+    ]
+  }
+]
