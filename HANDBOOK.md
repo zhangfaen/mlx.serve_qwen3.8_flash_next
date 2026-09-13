@@ -403,3 +403,93 @@ session 的 KV 还能续上吗?——**两个答案都是"是"**,以下为实测
   75GB 权重重新加载,不是缓存重建。
 - 推论:日常"换模型测一测再换回来"对进行中的会话是无感的;不同模型/会话的
   缓存条目互不干扰(各自目录哈希)。
+
+---
+
+## 11. Thinking(思考模式)配置全解(2026-09-13 深夜大战 ZCode 记录)
+
+### 11.1 问题起源
+
+Qwen3.8-Flash-Next 官方 model card:默认 thinking 模式,`reasoning_effort` 支持
+xhigh(默认)/medium/low 三档(注意没有单独的 "high" 档)。但实测发现 ZCode 里
+"低/中/极高"三档选择**完全没有生效**——服务端日志每一轮都是 `thinking=false`,
+模型一直在"无思考裸奔"。
+
+### 11.2 mlx-serve 三个端点的 thinking 实测
+
+mlx-serve 同时开三个协议端点,**全部需要显式传参才思考,没有"默认开"**:
+
+| 端点 | 协议 | 开思考的参数 | 实测 |
+|---|---|---|---|
+| `/v1/chat/completions` | OpenAI Chat | `reasoning_effort:"xhigh"` 或 `enable_thinking:true` | ✓ |
+| `/v1/messages` | **Anthropic** | `thinking:{type:"enabled",budget_tokens:N}` | ✓ |
+| `/v1/responses` | OpenAI Responses | `reasoning:{effort:"high"}` | ✓ |
+
+模型 chat template(Jinja)里虽然写了 `enable_thinking is undefined → 思考`,
+但 serve 在代码层面显式传 false,改模板无效(试过,改 L45/L164 分支 + 重载 +
+`--tokenize-cache-entries 0` 全部无效,已回滚)。MLX Core plist 的
+`defaultEnableThinking` 只作用于 App 自带聊天界面,不影响 API。
+采样参数官方推荐:思考模式 temp=1.0/top_p=0.95/top_k=20;
+generation_config.json 里模型自带的就是这套。
+
+### 11.3 ZCode 侧的坑(逆向 app.asar 确认)
+
+1. **openai-compatible kind 不下发思考参数**:用户配置里的
+   `reasoning.variants:[...]` 只是声明 UI 选项,不带翻译规则,纯摆设。
+   内置模型目录用 `reasoning.levels.<档位>.<kind>.set:[{path,value}]` 格式
+   才有翻译,但用户配置里这么写会被 UI 保存时整个删掉(实测两次被吃)。
+2. **anthropic kind 的自动翻译只认 "glm"**:引擎的
+   `isGlmAnthropicReasoningDepthModel` 按模型 id 字符串包含 "glm" 判定,
+   命中则自动生成三档 UI + `thinking:{budgetTokens}` 翻译
+   (low→8k, medium/high→16k, xhigh/max→32k)。
+3. **UI 保存会重写模型条目**:打开过模型编辑器后保存,不认识的字段
+   (reasoning/levels/modelIdByKind/kinds)全部丢弃。对抗它没有意义。
+
+### 11.4 最终方案:glm 键名 + modelIdByKind(已验证持久)
+
+`~/.zcode/v2/config.json` 的 provider 段最终形态:
+
+```json
+"ad2bf3dd-1834-4ec1-a1e2-e0e7f0fd56b5": {
+  "name": "MLX Serve Local",
+  "kind": "anthropic",
+  "options": {
+    "apiKey": "mlx-serve",
+    "baseURL": "http://127.0.0.1:11234",
+    "apiKeyRequired": true
+  },
+  "source": "custom",
+  "models": {
+    "glm/qwen3.8-flash-next": {
+      "name": "Qwen3.8 Flash Next (MLX Serve 4/8bit)",
+      "limit": { "context": 524288, "output": 32768 },
+      "modalities": { "input": ["text","image","video"], "output": ["text"] },
+      "kinds": ["anthropic"],
+      "modelIdByKind": { "anthropic": "ddalcu/Qwen3.8-Flash-Next-MLX-Serve-mixed-4-8bit" }
+    }
+  }
+}
+```
+
+原理:
+- **模型键名含 "glm"** → 命中引擎 glm 判定 → 档位 UI + thinking 翻译全自动,
+  且这些逻辑写死在 ZCode 引擎里,配置里没有可被 UI 删掉的东西 → 持久。
+- `modelIdByKind` 让实际请求仍发真实模型名(引擎 `resolveProtocolModelId`
+  优先读它)——但注意 §11.5 的宽容路由,此字段被 UI 吃掉也不影响当前单模型场景。
+- `kind: "anthropic"` + baseURL 不带 `/v1`(Anthropic SDK 自己拼 `/v1/messages`)。
+
+验证方式:发消息后查服务端日志
+`grep "thinking=" ~/.mlx-serve/logs/mlx-serve-11234.log | tail`,
+应看到 `thinking=true`。
+
+### 11.5 注意事项与边界
+
+1. **宽容路由**:mlx-serve 对未知 model 名不报 404,静默兜底到当前加载的
+   模型(用假名测试返回 200 并正常作答)。当前常驻只有 Flash-Next,兜底=正确。
+   **多模型常驻时此方案会失去"选错模型"的保护**——届时把 `modelIdByKind`
+   重新写回配置(重启 ZCode 生效),或换回真实模型名+手工 levels 方案。
+2. 官方提醒:多轮 agent 任务降低档位不一定省时间(分析不足→重试增多);
+   日常保持 xhigh(引擎 glm 默认),要快速简答时再降档。
+3. 备份:`~/.zcode/v2/config.json.bak-before-anthropic-kind`(改 anthropic 前)。
+4. 性能无损失:切协议后 prefill 526~552 tok/s、decode 36~42 tok/s,
+   前缀缓存照常命中(8192 cached/16537 total 实测)。
