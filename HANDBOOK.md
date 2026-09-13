@@ -383,3 +383,23 @@ session 的 KV 还能续上吗?——**两个答案都是"是"**,以下为实测
   会话可以无感恢复——但这是兜底,不是常规手段。
 - 验证用的可复现脚本模式:固定 `random.Random(seed)` 生成数字序列 payload,
   两次相同请求 TTFT 差两个数量级即缓存生效;换 seed 即强制冷测。
+
+### 10.3 跨模型卸载/重载同样有效(2026-09-13 追加实测)
+
+场景:App 里 unload Flash-Next、load Qwen3.8-27B 做了抽测(§4.1),期间
+本会话的 56.8k token 前缀全程存活;reload 回 Flash-Next 后第一枪日志:
+
+```
+[registry] default model -> ddalcu/...mixed-4-8bit (load-model request)
+[disk-cache] restored 56818/57042 tokens from SSD in 5884ms (ssm@56818)
+[hot-cache] reused 57011/57183 tokens
+```
+
+要点:
+- **磁盘缓存的生命周期挂在"模型"上,不挂在"进程加载状态"上**。卸载模型只清
+  内存权重和内存热缓存,`~/.mlx-serve/kv-cache/` 里的前缀块(含 linear-attention
+  状态快照 `ssm@<token位置>`)原样保留,重新 load 同一模型后第一枪直接从 SSD 恢复。
+- **恢复几乎免费**:57k token 前缀恢复仅 5.9s;reload 后等待时间的主体是
+  75GB 权重重新加载,不是缓存重建。
+- 推论:日常"换模型测一测再换回来"对进行中的会话是无感的;不同模型/会话的
+  缓存条目互不干扰(各自目录哈希)。
