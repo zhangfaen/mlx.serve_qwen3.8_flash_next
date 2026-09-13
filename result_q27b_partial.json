@@ -1,0 +1,26 @@
+[
+  {
+    "_note": "Qwen3.8-27B(lmstudio-community MLX 4bit)速度抽测原始数据。测试提前被用户叫停,bench.py 未跑到自动落盘,本文件从控制台日志转录,故只有日志里打印出的字段(无 gen_s 等)。同日同机与 Flash-Next(手册 §4)对比。"
+  },
+  {
+    "scenario": "S1_5k",
+    "provider": "q27b",
+    "n_chars": 5000,
+    "runs": [
+      {"kind": "cold", "ttft_s": 22.276, "prompt_tokens": 5052, "completion_tokens": 1024, "decode_tps": 19.6, "finish_reason": "length"},
+      {"kind": "cold", "ttft_s": 24.725, "prompt_tokens": 5055, "completion_tokens": 1024, "decode_tps": 14.9, "finish_reason": "length"},
+      {"kind": "cold(warmup)", "ttft_s": 38.441},
+      {"kind": "warm", "ttft_s": 0.517, "decode_tps": 11.7, "finish_reason": "length"},
+      {"kind": "warm", "ttft_s": 0.15, "decode_tps": 11.6, "finish_reason": "length"}
+    ]
+  },
+  {
+    "scenario": "S2_75k",
+    "provider": "q27b",
+    "n_chars": 75000,
+    "runs": [
+      {"kind": "cold", "ttft_s": 651.677, "prompt_tokens": 75049, "completion_tokens": 1024, "decode_tps": 7.3, "finish_reason": "length"}
+    ],
+    "stopped_early": "用户叫停,冷测只完成 1 次;S3_150k 未测"
+  }
+]

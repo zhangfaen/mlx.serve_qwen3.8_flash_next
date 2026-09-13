@@ -165,3 +165,27 @@ LM Studio 仅在"短 prompt 冷 prefill"一项略快(5k 场景 775 vs 555 tok/s)
    maxConcurrent=1,前一个大上下文请求的 slot 还没释放。串行+重试即可。
 3. 判分脚本本身也要被复核(GSM2 期望值错误差点冤枉模型)。
 
+## 追加:Qwen3.8-27B 速度抽测(2026-09-13,同机同端口 11234)
+
+背景:mlx-serve 另装了 `lmstudio-community/Qwen3.8-27B-MLX-4bit`(15GB,dense,
+原生 256K)。被加载后用 `python3 bench.py q27b` 同方法论抽测,与 MLX Flash-Next 对比。
+**27B 无 MTP 投机解码(mtp_loaded=false),decode 为裸速度**;kv8/前缀缓存配置沿用服务端原样。
+测试中途被用户叫停:75k 冷测只完成 1 次,150k 未测。原始数据 `result_q27b_partial.json`。
+
+| 指标 | 27B | Flash-Next | 差距 |
+|---|---|---|---|
+| 5k 冷 TTFT / prefill | ~23.5 s / ~215 tok/s | 9.1 s / 555 tok/s | 2.6x |
+| 5k 热 TTFT | 0.15 s | 0.22 s | 持平 |
+| 5k decode | 12~20 tok/s | 71 tok/s | 4~5x |
+| 75k 冷 TTFT / prefill | 651.7 s / 115 tok/s | 172 s / 437 tok/s | 3.8x |
+| 75k decode | 7.3 tok/s | 41 tok/s | 5.6x |
+| 150k | 未测 | 346 s / 434 tok/s | — |
+
+要点:prefill 随长度衰减(227→115 tok/s,dense 模型长序列注意力开销大),
+而 Flash-Next(MoE + linear attention 为主)稳定 ~435;前缀缓存对 27B 正常生效;
+5k decode 连续压测从 19.6 降到 11.6,疑似热节流。
+
+结论:**27B 仅剩内存优势(常驻 16GB vs 75GB)**。短上下文勉强可用(冷启动 ~20s、
+decode 十几 tok/s),长上下文不可用(75k 冷 prefill 11 分钟、decode 7 tok/s)。
+日常主力维持 Flash-Next,27B 定位为"内存紧张时的轻量备选"。
+

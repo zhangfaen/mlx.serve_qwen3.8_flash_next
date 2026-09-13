@@ -17,8 +17,8 @@ decode 快 3~5 倍(41 vs 13 tok/s @75k)、长上下文 prefill 2 倍快且不衰
 |---|---|
 | [HANDBOOK.md](HANDBOOK.md) | 主手册:从零复现全流程、512K YaRN 调优、ZCode 接入、运维命令、坑与回滚 |
 | [REPORT.md](REPORT.md) | 速度对比报告(原始数据 + 口径说明)与准确率抽样记录 |
-| [bench.py](bench.py) | 基准脚本:冷/热 prefill、TTFT、decode 吞吐(`python3 bench.py mlx\|lmstudio`) |
-| `result_*.json` | 2026-09-13 各轮实测原始数据 |
+| [bench.py](bench.py) | 基准脚本:冷/热 prefill、TTFT、decode 吞吐(`python3 bench.py mlx\|lmstudio\|q27b`) |
+| `result_*.json` | 2026-09-13 各轮实测原始数据(含 27B 抽测 `result_q27b_partial.json`,75k 起 prefill 慢 3.8x、decode 慢 5.6x,见 REPORT 末节) |
 
 ## 关键数字(2026-09-13 实测)
 

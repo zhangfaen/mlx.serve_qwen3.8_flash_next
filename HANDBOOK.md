@@ -187,6 +187,35 @@ LM Studio 随长度急剧衰减;MLX 长文本稳定 ~435。
 - 体感换算(150k ctx 写 1000 token):LM Studio 11.5 分钟 / MLX 冷 6.2 分钟,
   缓存命中 24 秒
 
+### 4.1 追加:Qwen3.8-27B 抽测(2026-09-13,同机同端口)
+
+背景:mlx-serve 里另装了 `lmstudio-community/Qwen3.8-27B-MLX-4bit`(15GB,dense,
+qwen3_5 架构,64 层其中 16 层 full attention,原生 256K 上下文)。
+在某次模型切换后它被加载到 11234 端口,顺手用同一套 `bench.py`(`python3 bench.py q27b`)
+抽测了速度,与 Flash-Next 对比。**27B 不支持 MTP 投机解码**(`mtp_loaded: false`),
+decode 是裸速度;Flash-Next 的数字含 MTP+PLD 3~5 倍加成,对比时注意口径。
+
+| 指标 | 27B(实测) | Flash-Next(§4) | 差距 |
+|---|---|---|---|
+| 5k 冷 TTFT | ~23.5 s | 9.1 s | 2.6x |
+| 5k 冷 prefill | ~215 tok/s | 555 tok/s | 2.6x |
+| 5k 热 TTFT | 0.15 s | 0.22 s | 持平(缓存正常) |
+| 5k decode | 12~20 tok/s | 71 tok/s | 4~5x |
+| 75k 冷 TTFT | 651.7 s | 172 s | 3.8x |
+| 75k 冷 prefill | 115 tok/s | 437 tok/s | 3.8x |
+| 75k decode | 7.3 tok/s | 41 tok/s | 5.6x |
+| 150k | 未测(用户叫停,按衰减外推冷 prefill 20+ 分钟) | 346 s | — |
+
+要点:
+
+- **prefill 随长度明显衰减**(227→115 tok/s):dense 模型长序列注意力开销大;
+  Flash-Next 是 MoE + linear attention 为主,长文本稳定 ~435 不掉速。
+- **kv8 + 前缀缓存对 27B 同样生效**(热 TTFT 0.15s),缓存配置不用改。
+- 5k decode 从 19.6 降到 11.6(连续压测),疑似热节流,量级不影响结论。
+- 结论:**27B 仅剩内存优势(16GB vs 75GB)**;短上下文勉强可用(冷启动 20s、
+  decode 十几 tok/s),长上下文场景不可用。日常主力维持 Flash-Next。
+- 原始数据:`result_q27b_partial.json`(测试中途叫停,仅日志打印字段)。
+
 ---
 
 ## 5. 准确率抽样验收(2026-09-13)
@@ -308,8 +337,9 @@ curl -s http://127.0.0.1:11234/metrics | grep -iE "prefix|cache" | head
 
 | 文件 | 内容 |
 |---|---|
-| `~/qwen-bench 手册同目录/bench.py` | 速度基准脚本(冷/热 prefill、decode、TTFT) |
+| `~/qwen-bench 手册同目录/bench.py` | 速度基准脚本(冷/热 prefill、decode、TTFT;`mlx\|lmstudio\|q27b` 三个 provider) |
 | `result_mlx_v2.json` / `result_lmstudio_v2.json` | 速度测试原始数据 |
+| `result_q27b_partial.json` | Qwen3.8-27B 抽测数据(中途叫停,部分场景) |
 | `result_yarn_needle.json` / `haystack_512k.txt` | 512K 检索测试数据与 payload |
 | `~/.mlx-serve/models/ddalcu/.../config.json` | 模型配置(YaRN 已启用) |
 | `~/Library/Preferences/com.dalcu.mlx-core.plist` | MLX Core App 设置 |

@@ -36,6 +36,14 @@ PROVIDERS = {
         "api_key": "mlx-serve",
         "model": "ddalcu/Qwen3.8-Flash-Next-MLX-Serve-mixed-4-8bit",
     },
+    # Qwen3.8-27B(lmstudio-community 4bit):同一服务同一端口,仅模型 id 不同。
+    # 用法:python3 bench.py q27b。27B 无 MTP 投机解码,decode 为裸速度。
+    "q27b": {
+        "host": "127.0.0.1",
+        "port": 11234,
+        "api_key": "mlx-serve",
+        "model": "Qwen3.8-27B-MLX-4bit",
+    },
 }
 
 # 场景:(名字, 目标字符数≈token数, 冷测次数, 热测次数)
