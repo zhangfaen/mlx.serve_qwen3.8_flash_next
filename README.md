@@ -19,6 +19,8 @@ decode 快 3~5 倍(41 vs 13 tok/s @75k)、长上下文 prefill 2 倍快且不衰
 | [REPORT.md](REPORT.md) | 速度对比报告(原始数据 + 口径说明)与准确率抽样记录 |
 | [bench.py](bench.py) | 基准脚本:冷/热 prefill、TTFT、decode 吞吐(`python3 bench.py mlx\|lmstudio\|q27b`) |
 | `result_*.json` | 2026-09-13 各轮实测原始数据(含 27B 抽测 `result_q27b_partial.json`,75k 起 prefill 慢 3.8x、decode 慢 5.6x,见 REPORT 末节) |
+| [eval/RESULTS.md](eval/RESULTS.md) | agentic 能力评测报告:真实开源 bugfix 任务包 6 题,5 PASS + 1 PARTIAL |
+| [eval/setup_tasks.sh](eval/setup_tasks.sh) | 评测任务包构建脚本(回滚/测试补丁/venv/验证 fail,可复现) |
 
 ## 关键数字(2026-09-13 实测)
 
@@ -32,6 +34,11 @@ decode 快 3~5 倍(41 vs 13 tok/s @75k)、长上下文 prefill 2 倍快且不衰
 
 准确率抽样 18/18 通过(代码/数学/指令/512k 深针检索/抗幻觉),
 量化 + kv8 + YaRN512K 组合未见质量劣化。
+
+**agentic 能力评测(2026-09-14)**:用 3 个真实开源 Python 库的 6 个真实 bugfix
+搭 SWE-bench 风格任务包,ZCode 干净子代理做题、独立判分:5 PASS + 1 PARTIAL,
+5 题修法与官方 fix 接近逐行等价,106 次工具调用零协议错误——
+"部署 + ZCode"未见劣质化信号,详见 [eval/RESULTS.md](eval/RESULTS.md)。
 
 ## 环境
 
