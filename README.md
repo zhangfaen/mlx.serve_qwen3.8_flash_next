@@ -40,8 +40,21 @@ decode 快 3~5 倍(41 vs 13 tok/s @75k)、长上下文 prefill 2 倍快且不衰
 5 题修法与官方 fix 接近逐行等价,106 次工具调用零协议错误——
 "部署 + ZCode"未见劣质化信号,详见 [eval/RESULTS.md](eval/RESULTS.md)。
 
-## 环境
+## 机器与环境
 
+- 硬件:MacBook Pro (Mac15,9),Apple M3 Max,128GB 统一内存,16 核 CPU
+- 系统:macOS 26.6.2 (25G83),arm64
 - 模型:`ddalcu/Qwen3.8-Flash-Next-MLX-Serve-mixed-4-8bit`(HuggingFace,磁盘 100GB)
 - 引擎:MLX Serve v26.9.2(MLX Core.app),端口 11234
 - 详细参数与理由见 HANDBOOK §2-§3
+
+## 这个仓库讲的完整故事
+
+1. **硬件**:128GB M3 Max 是前提——75GB 常驻 + 长上下文 KV 才放得下(HANDBOOK §1);
+2. **装引擎**:MLX Core.app(MLX Serve v26.9.2)或纯 CLI 二进制,HANDBOOK §2;
+3. **选模型**:同一模型 LM Studio Q3 vs MLX mixed 4/8bit 双引擎实测,MLX 全面胜出(REPORT.md);
+4. **调配置**:YaRN factor 2.0 外推到 512K + kv8 + 28GB/100GB 磁盘前缀缓存(HANDBOOK §3);
+5. **接 ZCode**:provider 配置、glm 键名对齐、thinking 三档全生效(HANDBOOK §6/§11);
+6. **跑起来**:日常主力会话,300k 前缀重发 5.7s,每轮只算增量(HANDBOOK §10);
+7. **确认没劣化**:准确率抽样 18/18(量化+YaRN+kv8 无损),agentic 评测 6 题
+   5 PASS + 1 PARTIAL、修法与官方逐行等价(eval/RESULTS.md)。
